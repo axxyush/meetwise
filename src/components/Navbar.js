@@ -56,12 +56,12 @@ function Navbar() {
                   {" "}
                   <li>
                     <a className="dropdown-item font" href="#">
-                      Meeting
+                      New Meeting
                     </a>
                   </li>{" "}
                   <li>
                     <a className="dropdown-item font" href="#">
-                      Meeting Group
+                      New Group
                     </a>
                   </li>{" "}
                 </ul>{" "}
