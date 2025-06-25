@@ -21,6 +21,10 @@ app = FastAPI(
 # Initialize transcription service
 transcription_service = TranscriptionService()
 
+@app.on_event("startup")
+async def load_models():
+    await transcription_service._load_models()
+
 @app.get("/")
 async def root():
     return {

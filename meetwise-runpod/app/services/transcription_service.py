@@ -18,12 +18,7 @@ class TranscriptionService:
         self.whisper_model = None
         self.pyannote_pipeline = None
         self.executor = ThreadPoolExecutor(max_workers=2)
-        
-        # RTX 4000 optimizations
         self._setup_gpu_optimizations()
-        
-        # Load models asynchronously
-        asyncio.create_task(self._load_models())
     
     def _setup_gpu_optimizations(self):
         """Setup GPU optimizations for RTX 4000"""
