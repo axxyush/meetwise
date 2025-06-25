@@ -68,7 +68,7 @@ body {
   padding: 0 15px;
   border-radius: 10px;
   border: 1px solid rgb(63, 63, 63);
-  margin-top: 83vh;
+  /* margin-top: 83vh; */
 }
 .messageBox:focus-within {
   border: 1px solid rgb(110, 110, 110);
@@ -100,4 +100,26 @@ body {
   justify-content: center;
   cursor: pointer;
   transition: all 0.3s;
+}
+
+.input-chat-msg {
+  background-color: #5b879a;
+  width: max-content;
+  padding: 10px;
+  border-radius: 10px;
+  margin-left: auto;
+}
+
+.output-chat-msg {
+  background-color: #586a6e;
+  width: max-content;
+  padding: 10px;
+  border-radius: 10px;
+  margin-right: auto;
+}
+
+.selected {
+  background-color: #5b879a;
+  width: 100%;
+  border-radius: 10px;
 }

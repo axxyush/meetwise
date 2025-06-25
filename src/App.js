@@ -1,16 +1,19 @@
 import "./App.css";
-import ChatLog from "./components/ChatLog";
-import Home from "./components/Home";
+import Logs from "./components/Logs";
 import Navbar from "./components/Navbar";
+import Home from "./components/Home";
+import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 
 function App() {
   return (
     <>
-      <Navbar />
-      <div className="d-flex">
-        <Home />
-        <ChatLog />
-      </div>
+      <Router>
+        <Navbar />
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/logs" element={<Logs />} />
+        </Routes>
+      </Router>
     </>
   );
 }

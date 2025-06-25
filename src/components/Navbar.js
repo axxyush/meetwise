@@ -37,9 +37,19 @@ function Navbar() {
                 <a
                   className="nav-link active font"
                   aria-current="page"
-                  href="#"
+                  href="/"
                 >
                   Home
+                </a>{" "}
+              </li>{" "}
+              <li className="nav-item">
+                {" "}
+                <a
+                  className="nav-link active font"
+                  aria-current="page"
+                  href="/logs"
+                >
+                  Logs
                 </a>{" "}
               </li>{" "}
               <li className="nav-item dropdown">
@@ -52,7 +62,7 @@ function Navbar() {
                 >
                   Create
                 </a>{" "}
-                <ul className="dropdown-menu">
+                <ul className="dropdown-menu dropdown-menu-dark ">
                   {" "}
                   <li>
                     <a className="dropdown-item font" href="#">

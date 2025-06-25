@@ -1,0 +1,12 @@
+{
+  "name": "meetwise_db",
+  "version": "1.0.0",
+  "description": "Database of MeetWise",
+  "license": "ISC",
+  "author": "Ayush Srivastava",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  }
+}
