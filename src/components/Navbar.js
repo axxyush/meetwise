@@ -49,16 +49,7 @@ function Navbar() {
                   Home
                 </Link>{" "}
               </li>{" "}
-              <li className="nav-item">
-                {" "}
-                <Link
-                  className="nav-link active font"
-                  aria-current="page"
-                  to="/logs"
-                >
-                  Logs
-                </Link>{" "}
-              </li>{" "}
+            
               <li className="nav-item dropdown">
                 {" "}
                 <button
