@@ -1,70 +1,156 @@
-# Getting Started with Create React App
+# MeetWise - AI-Powered Meeting Transcription
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+MeetWise is a comprehensive web application that transforms meeting recordings into actionable insights using AI-powered transcription and speaker diarization.
 
-## Available Scripts
+## Features
 
-In the project directory, you can run:
+- **Audio Upload**: Upload .wav audio files up to 100MB
+- **AI Transcription**: Powered by Whisper-medium for accurate speech-to-text
+- **Speaker Diarization**: Automatically identify different speakers
+- **Timestamps**: Precise timing for each conversation segment
+- **Meeting Management**: Create, organize, and view meeting records
+- **Modern UI**: Clean, responsive interface with Bootstrap styling
 
-### `npm start`
+## Architecture
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+The application consists of three main components:
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+1. **Frontend** (React.js) - User interface and meeting management
+2. **Backend** (FastAPI) - API server with database integration
+3. **RunPod Server** (FastAPI + Whisper) - GPU-powered transcription service
 
-### `npm test`
+## Prerequisites
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+- Node.js (v16 or higher)
+- Python (v3.8 or higher)
+- MongoDB (local or cloud instance)
+- RunPod GPU instance with Whisper setup
 
-### `npm run build`
+## Setup Instructions
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+### 1. Frontend Setup
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+```bash
+# Install dependencies
+npm install
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+# Start development server
+npm start
+```
 
-### `npm run eject`
+The frontend will run on `http://localhost:3000`
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+### 2. Backend Setup
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+```bash
+cd meetwise-backend
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+# Create virtual environment
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+# Install dependencies
+pip install -r requirements.txt
 
-## Learn More
+# Set environment variables
+cp .env.example .env
+# Edit .env with your MongoDB URI and other settings
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+# Start the server
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+The backend will run on `http://localhost:8000`
 
-### Code Splitting
+### 3. Database Setup
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+```bash
+cd database
 
-### Analyzing the Bundle Size
+# Install dependencies
+npm install
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+# Set up MongoDB connection
+# Make sure MongoDB is running locally or update the connection string
+```
 
-### Making a Progressive Web App
+### 4. RunPod Server
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+The RunPod server should already be configured and running. Make sure the URL is correctly set in your backend configuration.
 
-### Advanced Configuration
+## Environment Variables
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+### Backend (.env)
+```
+MONGODB_URI=mongodb://localhost:27017/meetwise
+ALLOWED_ORIGINS=http://localhost:3000
+RUNPOD_URL=https://your-runpod-instance.proxy.runpod.net
+```
 
-### Deployment
+### Frontend (.env)
+```
+REACT_APP_API_URL=http://localhost:8000/api/v1
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+## API Endpoints
 
-### `npm run build` fails to minify
+### Meetings
+- `POST /api/v1/meeting/create` - Create a new meeting
+- `GET /api/v1/meeting/list` - List all meetings
+- `GET /api/v1/meeting/{id}` - Get meeting details
+- `POST /api/v1/meeting/upload/{id}` - Upload audio for transcription
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+## Usage
+
+1. **Create a Meeting**: Click "New Meeting" and fill in the details
+2. **Upload Audio**: Select a .wav file and submit
+3. **View Results**: Navigate to the meeting detail page to see:
+   - Meeting summary with statistics
+   - Complete transcript with speaker identification
+   - Timestamps for each segment
+
+## File Structure
+
+```
+meetwise/
+├── src/                    # React frontend
+│   ├── components/        # React components
+│   │   ├── Home.js       # Landing page
+│   │   ├── NewMeeting.js # Meeting creation form
+│   │   ├── MeetingDetail.js # Meeting details view
+│   │   ├── Sidebar.js    # Navigation sidebar
+│   │   └── Navbar.js     # Top navigation
+├── meetwise-backend/      # FastAPI backend
+│   ├── app/
+│   │   ├── routes/       # API routes
+│   │   ├── services/     # Business logic
+│   │   └── main.py       # FastAPI app
+├── database/             # Database models
+│   ├── model/           # Mongoose models
+│   └── index.js         # Database connection
+└── meetwise-runpod/     # RunPod transcription service
+```
+
+## Technologies Used
+
+- **Frontend**: React.js, Bootstrap, React Router
+- **Backend**: FastAPI, Motor (async MongoDB), Pydantic
+- **Database**: MongoDB with Mongoose models
+- **AI**: Whisper-medium for transcription
+- **Deployment**: RunPod for GPU processing
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
+
+## License
+
+MIT License - see LICENSE file for details
+
+## Support
+
+For issues and questions, please create an issue in the repository.

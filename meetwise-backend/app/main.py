@@ -2,6 +2,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 import os
+import motor.motor_asyncio
+from datetime import datetime
 
 # Load environment variables
 load_dotenv()
@@ -22,6 +24,23 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Database connection
+MONGODB_URL = os.getenv("MONGODB_URI", "mongodb://localhost:27017")
+client = motor.motor_asyncio.AsyncIOMotorClient(MONGODB_URL)
+db = client.meetwise
+
+@app.on_event("startup")
+async def startup_db_client():
+    try:
+        await client.admin.command('ping')
+        print("Connected to MongoDB!")
+    except Exception as e:
+        print(f"Failed to connect to MongoDB: {e}")
+
+@app.on_event("shutdown")
+async def shutdown_db_client():
+    client.close()
 
 # Import and include routes
 from app.routes import meeting

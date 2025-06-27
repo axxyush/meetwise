@@ -8,7 +8,8 @@ load_dotenv()
 
 class WhisperClient:
     def __init__(self):
-        self.runpod_url = os.getenv("RUNPOD_URL", "http://your-runpod-ip:8000")
+        # Set to your actual RunPod inference server endpoint
+        self.runpod_url = os.getenv("RUNPOD_URL", "https://i8fq70ty7r1p18-8000.proxy.runpod.net")
         self.transcribe_endpoint = os.getenv("RUNPOD_TRANSCRIBE_ENDPOINT", "/transcribe")
         self.full_url = f"{self.runpod_url}{self.transcribe_endpoint}"
     

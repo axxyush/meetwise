@@ -1,6 +1,13 @@
 import React from "react";
+import { useNavigate, Link } from "react-router-dom";
 
 function Navbar() {
+  const navigate = useNavigate();
+
+  const handleNewMeeting = () => {
+    navigate("/new-meeting");
+  };
+
   return (
     <>
       <nav
@@ -27,60 +34,59 @@ function Navbar() {
             id="navbarsExample11"
           >
             {" "}
-            <a className="navbar-brand col-lg-3 me-0 font" href="/">
+            <Link className="navbar-brand col-lg-3 me-0 font" to="/">
               Meet Wise
-            </a>{" "}
+            </Link>{" "}
             <ul className="navbar-nav col-lg-6 justify-content-lg-center">
               {" "}
               <li className="nav-item">
                 {" "}
-                <a
+                <Link
                   className="nav-link active font"
                   aria-current="page"
-                  href="/"
+                  to="/"
                 >
                   Home
-                </a>{" "}
+                </Link>{" "}
               </li>{" "}
               <li className="nav-item">
                 {" "}
-                <a
+                <Link
                   className="nav-link active font"
                   aria-current="page"
-                  href="/logs"
+                  to="/logs"
                 >
                   Logs
-                </a>{" "}
+                </Link>{" "}
               </li>{" "}
               <li className="nav-item dropdown">
                 {" "}
-                <a
-                  className="nav-link dropdown-toggle font"
-                  href="#"
+                <button
+                  className="nav-link dropdown-toggle font btn btn-link border-0 p-0"
                   data-bs-toggle="dropdown"
                   aria-expanded="false"
                 >
                   Create
-                </a>{" "}
+                </button>{" "}
                 <ul className="dropdown-menu dropdown-menu-dark ">
                   {" "}
                   <li>
-                    <a className="dropdown-item font" href="#">
+                    <button className="dropdown-item font btn btn-link border-0 p-0" onClick={handleNewMeeting}>
                       New Meeting
-                    </a>
+                    </button>
                   </li>{" "}
                   <li>
-                    <a className="dropdown-item font" href="#">
+                    <button className="dropdown-item font btn btn-link border-0 p-0">
                       New Group
-                    </a>
+                    </button>
                   </li>{" "}
                 </ul>{" "}
               </li>{" "}
               <li className="nav-item">
                 {" "}
-                <a className="nav-link font" href="#">
+                <button className="nav-link font btn btn-link border-0 p-0">
                   About
-                </a>{" "}
+                </button>{" "}
               </li>{" "}
             </ul>{" "}
             <div className="d-lg-flex col-lg-3 justify-content-lg-end">

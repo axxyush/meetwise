@@ -1,12 +1,21 @@
 {
-  "name": "meetwise_db",
+  "name": "meetwise-database",
   "version": "1.0.0",
-  "description": "Database of MeetWise",
-  "license": "ISC",
-  "author": "Ayush Srivastava",
-  "type": "commonjs",
+  "description": "Database models and connection for MeetWise",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
-  }
+  },
+  "dependencies": {
+    "mongoose": "^7.6.3",
+    "dotenv": "^16.3.1"
+  },
+  "keywords": [
+    "mongodb",
+    "mongoose",
+    "meetwise",
+    "database"
+  ],
+  "author": "MeetWise Team",
+  "license": "MIT"
 }
