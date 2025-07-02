@@ -18,7 +18,6 @@ function App() {
             <div className="p-4">
               <Routes>
                 <Route path="/" element={<Home />} />
-                <Route path="/logs" element={<Logs />} />
                 <Route path="/new-meeting" element={<NewMeeting />} />
                 <Route path="/meeting/:id" element={<MeetingDetail />} />
               </Routes>

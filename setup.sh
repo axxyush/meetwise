@@ -14,12 +14,6 @@ source venv/bin/activate
 pip install -r requirements.txt
 cd ..
 
-# Install database dependencies
-echo "🗄️ Installing database dependencies..."
-cd database
-npm install
-cd ..
-
 echo "✅ Setup complete!"
 echo ""
 echo "To start the application:"
