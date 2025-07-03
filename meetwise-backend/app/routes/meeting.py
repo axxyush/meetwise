@@ -1,4 +1,4 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
+from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, Header
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
@@ -9,8 +9,22 @@ from datetime import datetime
 from bson import ObjectId
 from app.services.whisper_client import WhisperClient
 from app.main import db
+import jwt
 
 router = APIRouter(prefix="/meeting", tags=["meeting"])
+
+JWT_SECRET = os.getenv("JWT_SECRET", "devsecret")
+JWT_ALGO = "HS256"
+
+def get_current_user(authorization: Optional[str] = Header(None)):
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    token = authorization.split(" ", 1)[1]
+    try:
+        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGO])
+        return payload["user_id"]
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid token")
 
 # Pydantic models for request/response
 class MeetingCreate(BaseModel):
@@ -31,14 +45,11 @@ class MeetingResponse(BaseModel):
     updatedAt: datetime
 
 @router.post("/create")
-async def create_meeting(meeting_data: MeetingCreate):
+async def create_meeting(meeting_data: MeetingCreate, user_id: str = Depends(get_current_user)):
     """
     Create a new meeting record
     """
     try:
-        # For now, we'll use a default user ID. In a real app, this would come from authentication
-        user_id = ObjectId("507f1f77bcf86cd799439011")  # Default user ID
-        
         meeting_doc = {
             "title": meeting_data.title,
             "description": meeting_data.description,
@@ -48,14 +59,12 @@ async def create_meeting(meeting_data: MeetingCreate):
             "segments": [],
             "speakerCount": 0,
             "status": "pending",
-            "userId": user_id,
+            "userId": ObjectId(user_id),
             "createdAt": datetime.utcnow(),
             "updatedAt": datetime.utcnow()
         }
-        
         result = await db.meetings.insert_one(meeting_doc)
         meeting_doc["_id"] = result.inserted_id
-        
         return JSONResponse(
             status_code=201,
             content={
@@ -70,7 +79,6 @@ async def create_meeting(meeting_data: MeetingCreate):
                 }
             }
         )
-        
     except Exception as e:
         print(f"Error creating meeting: {str(e)}")
         raise HTTPException(
@@ -79,30 +87,29 @@ async def create_meeting(meeting_data: MeetingCreate):
         )
 
 @router.get("/list")
-async def list_meetings():
+async def list_meetings(user_id: str = Depends(get_current_user)):
     """
     Get all meetings for the current user
     """
     try:
-        # For now, we'll use a default user ID. In a real app, this would come from authentication
-        user_id = ObjectId("507f1f77bcf86cd799439011")  # Default user ID
-        
-        cursor = db.meetings.find({"userId": user_id}).sort("createdAt", -1)
+        cursor = db.meetings.find({
+            "userId": ObjectId(user_id)
+        }).sort("createdAt", -1)
         meetings = []
-        
         async for meeting in cursor:
-            meetings.append({
-                "id": str(meeting["_id"]),
-                "title": meeting["title"],
-                "description": meeting["description"],
-                "audioFileName": meeting["audioFileName"],
-                "audioFileSize": meeting["audioFileSize"],
-                "status": meeting["status"],
-                "speakerCount": meeting["speakerCount"],
-                "createdAt": meeting["createdAt"].isoformat(),
-                "updatedAt": meeting["updatedAt"].isoformat()
-            })
-        
+            # Only include meetings that have a valid userId
+            if "userId" in meeting and meeting["userId"] == ObjectId(user_id):
+                meetings.append({
+                    "id": str(meeting["_id"]),
+                    "title": meeting["title"],
+                    "description": meeting["description"],
+                    "audioFileName": meeting["audioFileName"],
+                    "audioFileSize": meeting["audioFileSize"],
+                    "status": meeting["status"],
+                    "speakerCount": meeting["speakerCount"],
+                    "createdAt": meeting["createdAt"].isoformat(),
+                    "updatedAt": meeting["updatedAt"].isoformat()
+                })
         return JSONResponse(
             status_code=200,
             content={
@@ -110,7 +117,6 @@ async def list_meetings():
                 "meetings": meetings
             }
         )
-        
     except Exception as e:
         print(f"Error listing meetings: {str(e)}")
         raise HTTPException(
@@ -119,25 +125,20 @@ async def list_meetings():
         )
 
 @router.get("/{meeting_id}")
-async def get_meeting(meeting_id: str):
+async def get_meeting(meeting_id: str, user_id: str = Depends(get_current_user)):
     """
     Get a specific meeting by ID
     """
     try:
-        # For now, we'll use a default user ID. In a real app, this would come from authentication
-        user_id = ObjectId("507f1f77bcf86cd799439011")  # Default user ID
-        
         meeting = await db.meetings.find_one({
             "_id": ObjectId(meeting_id),
-            "userId": user_id
+            "userId": ObjectId(user_id)
         })
-        
         if not meeting:
             raise HTTPException(
                 status_code=404,
                 detail="Meeting not found"
             )
-        
         return JSONResponse(
             status_code=200,
             content={
@@ -157,7 +158,6 @@ async def get_meeting(meeting_id: str):
                 }
             }
         )
-        
     except HTTPException:
         raise
     except Exception as e:
@@ -168,7 +168,11 @@ async def get_meeting(meeting_id: str):
         )
 
 @router.post("/upload/{meeting_id}")
-async def upload_audio(meeting_id: str, file: UploadFile = File(...)):
+async def upload_audio(
+    meeting_id: str,
+    file: UploadFile = File(...),
+    user_id: str = Depends(get_current_user)
+):
     """
     Upload a .wav audio file for transcription with speaker diarization
     """
@@ -178,7 +182,6 @@ async def upload_audio(meeting_id: str, file: UploadFile = File(...)):
             status_code=400, 
             detail="Only .wav files are supported"
         )
-    
     # Validate file size (e.g., max 100MB)
     max_size = 100 * 1024 * 1024  # 100MB
     if file.size and file.size > max_size:
@@ -186,26 +189,19 @@ async def upload_audio(meeting_id: str, file: UploadFile = File(...)):
             status_code=400,
             detail="File size too large. Maximum size is 100MB"
         )
-    
     try:
-        # For now, we'll use a default user ID. In a real app, this would come from authentication
-        user_id = ObjectId("507f1f77bcf86cd799439011")  # Default user ID
-        
         # Check if meeting exists and belongs to user
         meeting = await db.meetings.find_one({
             "_id": ObjectId(meeting_id),
-            "userId": user_id
+            "userId": ObjectId(user_id)
         })
-        
         if not meeting:
             raise HTTPException(
                 status_code=404,
                 detail="Meeting not found"
             )
-        
         # Read file content
         audio_content = await file.read()
-        
         # Update meeting status to processing
         await db.meetings.update_one(
             {"_id": ObjectId(meeting_id)},
@@ -218,16 +214,13 @@ async def upload_audio(meeting_id: str, file: UploadFile = File(...)):
                 }
             }
         )
-        
         # Initialize Whisper client
         whisper_client = WhisperClient()
-        
         # Transcribe audio with speaker diarization
         result = await whisper_client.transcribe_audio_bytes(
             audio_content, 
             file.filename
         )
-        
         if result is None:
             # Update meeting status to failed
             await db.meetings.update_one(
@@ -243,12 +236,10 @@ async def upload_audio(meeting_id: str, file: UploadFile = File(...)):
                 status_code=500,
                 detail="Failed to transcribe audio. Please check if the RunPod server is running."
             )
-        
         # Extract transcript and segments from result
         transcript = result.get("transcript", "")
         segments = result.get("segments", [])
         speaker_count = len(set(seg.get("speaker", "") for seg in segments if seg.get("speaker") != "UNKNOWN"))
-        
         # Update meeting with transcription results
         await db.meetings.update_one(
             {"_id": ObjectId(meeting_id)},
@@ -262,7 +253,6 @@ async def upload_audio(meeting_id: str, file: UploadFile = File(...)):
                 }
             }
         )
-        
         return JSONResponse(
             status_code=200,
             content={
@@ -275,7 +265,6 @@ async def upload_audio(meeting_id: str, file: UploadFile = File(...)):
                 "meeting_id": meeting_id
             }
         )
-        
     except HTTPException:
         # Re-raise HTTP exceptions
         raise

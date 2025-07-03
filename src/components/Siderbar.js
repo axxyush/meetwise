@@ -6,14 +6,26 @@ function Sidebar() {
   const [meetings, setMeetings] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const isLoggedIn = !!localStorage.getItem("token");
+  const token = localStorage.getItem("token");
+  const email = localStorage.getItem("email");
+  const username = email ? email.split("@")[0] : "";
 
   const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:8000/api/v1";
 
   const fetchMeetings = useCallback(async () => {
+    if (!isLoggedIn) {
+      setMeetings([]);
+      setLoading(false);
+      return;
+    }
     try {
-      const response = await fetch(`${API_BASE_URL}/meeting/list`);
+      const response = await fetch(`${API_BASE_URL}/meeting/list`, {
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      });
       const data = await response.json();
-      
       if (data.success) {
         setMeetings(data.meetings);
       }
@@ -22,18 +34,22 @@ function Sidebar() {
     } finally {
       setLoading(false);
     }
-  }, [API_BASE_URL]);
+  }, [API_BASE_URL, isLoggedIn, token]);
 
   useEffect(() => {
     fetchMeetings();
-  }, [fetchMeetings]);
+  }, [fetchMeetings, token]);
 
   const handleLinkClick = (linkName) => {
     setActiveLink(linkName);
   };
 
   const handleNewMeeting = () => {
-    navigate("/new-meeting");
+    if (!isLoggedIn) {
+      navigate("/login");
+    } else {
+      navigate("/new-meeting");
+    }
   };
 
   const formatDate = (dateString) => {
@@ -63,7 +79,9 @@ function Sidebar() {
         style={{ width: 300, height: "92vh", overflowY: "auto" }}
       >
         <div className="d-flex align-items-center mb-3">
-          <h5 className="text-white mb-0">MeetWise</h5>
+          <Link to="/" className="text-white mb-0 text-decoration-none" style={{ fontSize: '1.25rem', fontWeight: 600 }}>
+            MeetWise
+          </Link>
         </div>
 
         {/* New Meeting Button */}
@@ -81,90 +99,103 @@ function Sidebar() {
         <hr className="text-white" />
 
         {/* Meetings List */}
-        <div className="mb-3">
-          <h6 className="text-white mb-2">Recent Meetings</h6>
-          {loading ? (
-            <div className="text-white-50">Loading meetings...</div>
-          ) : meetings.length === 0 ? (
-            <div className="text-white-50">No meetings yet</div>
-          ) : (
-            <div className="meetings-list">
-              {meetings.map((meeting) => (
-                <Link
-                  key={meeting.id}
-                  to={`/meeting/${meeting.id}`}
-                  className="text-decoration-none"
-                  onClick={() => handleLinkClick(meeting.id)}
-                >
-                  <div
-                    className={`meeting-item p-2 mb-2 rounded ${
-                      activeLink === meeting.id ? "bg-primary" : "bg-dark"
-                    }`}
-                    style={{ border: "1px solid #444" }}
+        {isLoggedIn && (
+          <div className="mb-3">
+            <h6 className="text-white mb-2">Recent Meetings</h6>
+            {loading ? (
+              <div className="text-white-50">Loading meetings...</div>
+            ) : meetings.length === 0 ? (
+              <div className="text-white-50">No meetings yet</div>
+            ) : (
+              <div className="meetings-list">
+                {meetings.map((meeting) => (
+                  <Link
+                    key={meeting.id}
+                    to={`/meeting/${meeting.id}`}
+                    className="text-decoration-none"
+                    onClick={() => handleLinkClick(meeting.id)}
                   >
-                    <div className="d-flex justify-content-between align-items-start">
-                      <div className="flex-grow-1">
-                        <div className="text-white fw-bold" style={{ fontSize: "0.9rem" }}>
-                          {meeting.title}
-                        </div>
-                        <div className="text-white-50" style={{ fontSize: "0.8rem" }}>
-                          {formatDate(meeting.createdAt)}
-                        </div>
-                        {meeting.speakerCount > 0 && (
-                          <div className="text-white-50" style={{ fontSize: "0.8rem" }}>
-                            {meeting.speakerCount} speakers
+                    <div
+                      className={`meeting-item p-2 mb-2 rounded ${
+                        activeLink === meeting.id ? "bg-primary" : "bg-dark"
+                      }`}
+                      style={{ border: "1px solid #444" }}
+                    >
+                      <div className="d-flex justify-content-between align-items-start">
+                        <div className="flex-grow-1">
+                          <div className="text-white fw-bold" style={{ fontSize: "0.9rem" }}>
+                            {meeting.title}
                           </div>
-                        )}
-                      </div>
-                      <div className="ms-2">
-                        {getStatusBadge(meeting.status)}
+                          <div className="text-white-50" style={{ fontSize: "0.8rem" }}>
+                            {formatDate(meeting.createdAt)}
+                          </div>
+                          {meeting.speakerCount > 0 && (
+                            <div className="text-white-50" style={{ fontSize: "0.8rem" }}>
+                              {meeting.speakerCount} speakers
+                            </div>
+                          )}
+                        </div>
+                        <div className="ms-2">
+                          {getStatusBadge(meeting.status)}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          )}
-        </div>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         <hr className="text-white" />
 
-        {/* User Profile */}
+        {/* User Profile or Log In Button */}
         <div className="dropdown mt-auto">
-          <button
-            className="d-flex align-items-center text-white text-decoration-none dropdown-toggle btn btn-link border-0 p-0"
-            data-bs-toggle="dropdown"
-            aria-expanded="false"
-          >
-            <img
-              src="https://github.com/axxyush.png"
-              alt=""
-              width={32}
-              height={32}
-              className="rounded-circle me-2"
-            />
-            <strong>Ayush</strong>
-          </button>
-          <ul className="dropdown-menu dropdown-menu-dark text-small shadow">
-            <li>
-              <button className="dropdown-item btn btn-link border-0 p-0" onClick={handleNewMeeting}>
-                New Meeting
-              </button>
-            </li>
-            <li>
-              <button className="dropdown-item btn btn-link border-0 p-0">
-                New Group
-              </button>
-            </li>
-            <li>
-              <hr className="dropdown-divider" />
-            </li>
-            <li>
-              <button className="dropdown-item btn btn-link border-0 p-0">
-                Sign out
-              </button>
-            </li>
-          </ul>
+          {isLoggedIn ? (
+            <button
+              className="d-flex align-items-center text-white text-decoration-none dropdown-toggle btn btn-link border-0 p-0"
+              data-bs-toggle="dropdown"
+              aria-expanded="false"
+            >
+              <img
+                src="https://github.com/axxyush.png"
+                alt=""
+                width={32}
+                height={32}
+                className="rounded-circle me-2"
+              />
+              <strong>{username}</strong>
+            </button>
+          ) : (
+            <button
+              className="btn btn-primary w-100"
+              onClick={() => navigate("/login")}
+            >
+              Log In
+            </button>
+          )}
+          {isLoggedIn && (
+            <ul className="dropdown-menu dropdown-menu-dark text-small shadow">
+              <li>
+                <button className="dropdown-item btn btn-link border-0 p-0" onClick={handleNewMeeting}>
+                  New Meeting
+                </button>
+              </li>
+              <li>
+                <button className="dropdown-item btn btn-link border-0 p-0">
+                  New Group
+                </button>
+              </li>
+              <li>
+                <hr className="dropdown-divider" />
+              </li>
+              <li>
+                <button className="dropdown-item btn btn-link border-0 p-0">
+                  Sign out
+                </button>
+              </li>
+            </ul>
+          )}
         </div>
       </div>
     </>

@@ -12,6 +12,7 @@ function NewMeeting() {
   const navigate = useNavigate();
 
   const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:8000/api/v1";
+  const token = localStorage.getItem("token");
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -54,6 +55,7 @@ function NewMeeting() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
         },
         body: JSON.stringify(formData),
       });
@@ -72,6 +74,9 @@ function NewMeeting() {
 
       const uploadResponse = await fetch(`${API_BASE_URL}/meeting/upload/${meetingId}`, {
         method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`
+        },
         body: formDataUpload,
       });
 

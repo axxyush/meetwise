@@ -10,10 +10,15 @@ function MeetingDetail() {
   const [activeTab, setActiveTab] = useState("summary"); // "summary" or "transcript"
 
   const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:8000/api/v1";
+  const token = localStorage.getItem("token");
 
   const fetchMeeting = useCallback(async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/meeting/${id}`);
+      const response = await fetch(`${API_BASE_URL}/meeting/${id}`, {
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      });
       const data = await response.json();
       
       if (data.success) {
@@ -27,7 +32,7 @@ function MeetingDetail() {
     } finally {
       setLoading(false);
     }
-  }, [API_BASE_URL, id]);
+  }, [API_BASE_URL, id, token]);
 
   useEffect(() => {
     fetchMeeting();

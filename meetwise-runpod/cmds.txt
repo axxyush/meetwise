@@ -10,8 +10,6 @@ Check transcription by running below cmd on local machine
   -H "Content-Type: multipart/form-data" \
   -F "file=@/Users/aryanmudgal/Desktop/output8.wav"
 
-Host GPU URL (on local machine):
-https://i8fq70ty7r1p18-8000.proxy.runpod.net/
  
 check GPU url with (on local machine):
  curl https://i8fq70ty7r1p18-8000.proxy.runpod.net/
