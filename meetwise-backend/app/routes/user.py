@@ -28,7 +28,7 @@ def create_jwt(user_id: str, email: str):
 
 @router.post("/register")
 async def register(user: UserCreate):
-    existing = await db.users.find_one({"email": user.email})
+    existing = db.users.find_one({"email": user.email})
     if existing:
         raise HTTPException(status_code=400, detail="Email already registered.")
     now = datetime.utcnow()
@@ -38,12 +38,12 @@ async def register(user: UserCreate):
         "createdAt": now,
         "updatedAt": now
     }
-    result = await db.users.insert_one(user_doc)
+    result = db.users.insert_one(user_doc)
     return JSONResponse(status_code=201, content={"success": True, "user_id": str(result.inserted_id)})
 
 @router.post("/login")
 async def login(user: UserCreate):
-    user_doc = await db.users.find_one({"email": user.email})
+    user_doc = db.users.find_one({"email": user.email})
     if not user_doc or user_doc["password"] != hash_password(user.password):
         raise HTTPException(status_code=401, detail="Invalid email or password.")
     token = create_jwt(str(user_doc["_id"]), user_doc["email"])

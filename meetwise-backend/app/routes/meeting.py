@@ -1,14 +1,21 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, Header
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
-import aiofiles
-import tempfile
 import os
 from datetime import datetime
 from bson import ObjectId
 from app.services.whisper_client import WhisperClient
 from app.main import db
+from app.models.meeting import (
+    MeetingCreate,
+    MeetingResponse,
+    MeetingListResponse,
+    MeetingSummaryResponse,
+    UploadResponse,
+    mongo_doc_to_meeting_summary_response,
+    mongo_doc_to_meeting_response,
+    mongo_doc_to_meeting_list_response
+)
 import jwt
 
 router = APIRouter(prefix="/meeting", tags=["meeting"])
@@ -26,25 +33,9 @@ def get_current_user(authorization: Optional[str] = Header(None)):
     except Exception:
         raise HTTPException(status_code=401, detail="Invalid token")
 
-# Pydantic models for request/response
-class MeetingCreate(BaseModel):
-    title: str
-    description: Optional[str] = ""
 
-class MeetingResponse(BaseModel):
-    id: str
-    title: str
-    description: str
-    audioFileName: str
-    audioFileSize: int
-    transcript: str
-    segments: List[Dict[str, Any]]
-    speakerCount: int
-    status: str
-    createdAt: datetime
-    updatedAt: datetime
 
-@router.post("/create")
+@router.post("/create", response_model=MeetingSummaryResponse)
 async def create_meeting(meeting_data: MeetingCreate, user_id: str = Depends(get_current_user)):
     """
     Create a new meeting record
@@ -63,22 +54,12 @@ async def create_meeting(meeting_data: MeetingCreate, user_id: str = Depends(get
             "createdAt": datetime.utcnow(),
             "updatedAt": datetime.utcnow()
         }
-        result = await db.meetings.insert_one(meeting_doc)
+        result = db.meetings.insert_one(meeting_doc)
         meeting_doc["_id"] = result.inserted_id
-        return JSONResponse(
-            status_code=201,
-            content={
-                "success": True,
-                "meeting": {
-                    "id": str(meeting_doc["_id"]),
-                    "title": meeting_doc["title"],
-                    "description": meeting_doc["description"],
-                    "status": meeting_doc["status"],
-                    "createdAt": meeting_doc["createdAt"].isoformat(),
-                    "updatedAt": meeting_doc["updatedAt"].isoformat()
-                }
-            }
-        )
+        
+        # Convert to Pydantic model for response
+        meeting_response = mongo_doc_to_meeting_summary_response(meeting_doc)
+        return meeting_response
     except Exception as e:
         print(f"Error creating meeting: {str(e)}")
         raise HTTPException(
@@ -86,7 +67,7 @@ async def create_meeting(meeting_data: MeetingCreate, user_id: str = Depends(get
             detail="Internal server error while creating meeting"
         )
 
-@router.get("/list")
+@router.get("/list", response_model=List[MeetingListResponse])
 async def list_meetings(user_id: str = Depends(get_current_user)):
     """
     Get all meetings for the current user
@@ -96,27 +77,12 @@ async def list_meetings(user_id: str = Depends(get_current_user)):
             "userId": ObjectId(user_id)
         }).sort("createdAt", -1)
         meetings = []
-        async for meeting in cursor:
+        for meeting in cursor:
             # Only include meetings that have a valid userId
             if "userId" in meeting and meeting["userId"] == ObjectId(user_id):
-                meetings.append({
-                    "id": str(meeting["_id"]),
-                    "title": meeting["title"],
-                    "description": meeting["description"],
-                    "audioFileName": meeting["audioFileName"],
-                    "audioFileSize": meeting["audioFileSize"],
-                    "status": meeting["status"],
-                    "speakerCount": meeting["speakerCount"],
-                    "createdAt": meeting["createdAt"].isoformat(),
-                    "updatedAt": meeting["updatedAt"].isoformat()
-                })
-        return JSONResponse(
-            status_code=200,
-            content={
-                "success": True,
-                "meetings": meetings
-            }
-        )
+                meeting_response = mongo_doc_to_meeting_list_response(meeting)
+                meetings.append(meeting_response)
+        return meetings
     except Exception as e:
         print(f"Error listing meetings: {str(e)}")
         raise HTTPException(
@@ -124,13 +90,13 @@ async def list_meetings(user_id: str = Depends(get_current_user)):
             detail="Internal server error while listing meetings"
         )
 
-@router.get("/{meeting_id}")
+@router.get("/{meeting_id}", response_model=MeetingResponse)
 async def get_meeting(meeting_id: str, user_id: str = Depends(get_current_user)):
     """
     Get a specific meeting by ID
     """
     try:
-        meeting = await db.meetings.find_one({
+        meeting = db.meetings.find_one({
             "_id": ObjectId(meeting_id),
             "userId": ObjectId(user_id)
         })
@@ -139,25 +105,10 @@ async def get_meeting(meeting_id: str, user_id: str = Depends(get_current_user))
                 status_code=404,
                 detail="Meeting not found"
             )
-        return JSONResponse(
-            status_code=200,
-            content={
-                "success": True,
-                "meeting": {
-                    "id": str(meeting["_id"]),
-                    "title": meeting["title"],
-                    "description": meeting["description"],
-                    "audioFileName": meeting["audioFileName"],
-                    "audioFileSize": meeting["audioFileSize"],
-                    "transcript": meeting["transcript"],
-                    "segments": meeting["segments"],
-                    "speakerCount": meeting["speakerCount"],
-                    "status": meeting["status"],
-                    "createdAt": meeting["createdAt"].isoformat(),
-                    "updatedAt": meeting["updatedAt"].isoformat()
-                }
-            }
-        )
+        
+        # Convert to Pydantic model for response
+        meeting_response = mongo_doc_to_meeting_response(meeting)
+        return meeting_response
     except HTTPException:
         raise
     except Exception as e:
@@ -167,7 +118,7 @@ async def get_meeting(meeting_id: str, user_id: str = Depends(get_current_user))
             detail="Internal server error while getting meeting"
         )
 
-@router.post("/upload/{meeting_id}")
+@router.post("/upload/{meeting_id}", response_model=UploadResponse)
 async def upload_audio(
     meeting_id: str,
     file: UploadFile = File(...),
@@ -191,7 +142,7 @@ async def upload_audio(
         )
     try:
         # Check if meeting exists and belongs to user
-        meeting = await db.meetings.find_one({
+        meeting = db.meetings.find_one({
             "_id": ObjectId(meeting_id),
             "userId": ObjectId(user_id)
         })
@@ -203,7 +154,7 @@ async def upload_audio(
         # Read file content
         audio_content = await file.read()
         # Update meeting status to processing
-        await db.meetings.update_one(
+        db.meetings.update_one(
             {"_id": ObjectId(meeting_id)},
             {
                 "$set": {
@@ -223,7 +174,7 @@ async def upload_audio(
         )
         if result is None:
             # Update meeting status to failed
-            await db.meetings.update_one(
+            db.meetings.update_one(
                 {"_id": ObjectId(meeting_id)},
                 {
                     "$set": {
@@ -241,7 +192,7 @@ async def upload_audio(
         segments = result.get("segments", [])
         speaker_count = len(set(seg.get("speaker", "") for seg in segments if seg.get("speaker") != "UNKNOWN"))
         # Update meeting with transcription results
-        await db.meetings.update_one(
+        db.meetings.update_one(
             {"_id": ObjectId(meeting_id)},
             {
                 "$set": {
@@ -253,17 +204,14 @@ async def upload_audio(
                 }
             }
         )
-        return JSONResponse(
-            status_code=200,
-            content={
-                "success": True,
-                "transcript": transcript,
-                "segments": segments,
-                "filename": file.filename,
-                "file_size": len(audio_content),
-                "speaker_count": speaker_count,
-                "meeting_id": meeting_id
-            }
+        return UploadResponse(
+            success=True,
+            transcript=transcript,
+            segments=segments,
+            filename=file.filename,
+            file_size=len(audio_content),
+            speaker_count=speaker_count,
+            meeting_id=meeting_id
         )
     except HTTPException:
         # Re-raise HTTP exceptions
