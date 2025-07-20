@@ -45,9 +45,11 @@ async def shutdown_db_client():
 # Import and include routes
 from app.routes import meeting
 from app.routes import user
+from app.routes import aichat
 
 app.include_router(meeting.router, prefix="/api/v1")
 app.include_router(user.router, prefix="/api/v1")
+app.include_router(aichat.router, prefix="/api/v1")
 
 @app.get("/")
 async def root():

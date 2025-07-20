@@ -9,18 +9,19 @@ function MeetingDetail() {
   const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState("summary"); // "summary" or "transcript"
 
-  const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:8000/api/v1";
+  const API_BASE_URL =
+    process.env.REACT_APP_API_URL || "http://localhost:8000/api/v1";
   const token = localStorage.getItem("token");
 
   const fetchMeeting = useCallback(async () => {
     try {
       const response = await fetch(`${API_BASE_URL}/meeting/${id}`, {
         headers: {
-          "Authorization": `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       });
       const data = await response.json();
-      
+
       if (data.success) {
         setMeeting(data.meeting);
       } else {
@@ -56,9 +57,9 @@ function MeetingDetail() {
       pending: "badge bg-warning",
       processing: "badge bg-info",
       completed: "badge bg-success",
-      failed: "badge bg-danger"
+      failed: "badge bg-danger",
     };
-    
+
     return (
       <span className={statusClasses[status] || "badge bg-secondary"}>
         {status}
@@ -69,12 +70,15 @@ function MeetingDetail() {
   const formatTime = (seconds) => {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = Math.floor(seconds % 60);
-    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+    return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
   };
 
   if (loading) {
     return (
-      <div className="d-flex justify-content-center align-items-center" style={{ height: "400px" }}>
+      <div
+        className="d-flex justify-content-center align-items-center"
+        style={{ height: "400px" }}
+      >
         <div className="spinner-border text-primary" role="status">
           <span className="visually-hidden">Loading...</span>
         </div>
@@ -162,7 +166,8 @@ function MeetingDetail() {
                       <strong>Audio File:</strong>
                     </div>
                     <div className="col-sm-8">
-                      {meeting.audioFileName} ({formatFileSize(meeting.audioFileSize)})
+                      {meeting.audioFileName} (
+                      {formatFileSize(meeting.audioFileSize)})
                     </div>
                   </div>
                 </>
@@ -178,7 +183,9 @@ function MeetingDetail() {
           <div className="btn-group" role="group">
             <button
               type="button"
-              className={`btn ${activeTab === "summary" ? "btn-primary" : "btn-outline-primary"}`}
+              className={`btn ${
+                activeTab === "summary" ? "btn-primary" : "btn-outline-primary"
+              }`}
               onClick={() => setActiveTab("summary")}
             >
               <i className="fas fa-chart-bar me-2"></i>
@@ -186,7 +193,11 @@ function MeetingDetail() {
             </button>
             <button
               type="button"
-              className={`btn ${activeTab === "transcript" ? "btn-primary" : "btn-outline-primary"}`}
+              className={`btn ${
+                activeTab === "transcript"
+                  ? "btn-primary"
+                  : "btn-outline-primary"
+              }`}
               onClick={() => setActiveTab("transcript")}
             >
               <i className="fas fa-file-alt me-2"></i>
@@ -210,23 +221,29 @@ function MeetingDetail() {
                     <div className="row mb-3">
                       <div className="col-md-3">
                         <div className="text-center">
-                          <div className="h4 text-primary">{meeting.speakerCount}</div>
+                          <div className="h4 text-primary">
+                            {meeting.speakerCount}
+                          </div>
                           <div className="text-muted">Speakers</div>
                         </div>
                       </div>
                       <div className="col-md-3">
                         <div className="text-center">
-                          <div className="h4 text-primary">{meeting.segments.length}</div>
+                          <div className="h4 text-primary">
+                            {meeting.segments.length}
+                          </div>
                           <div className="text-muted">Segments</div>
                         </div>
                       </div>
                       <div className="col-md-3">
                         <div className="text-center">
                           <div className="h4 text-primary">
-                            {meeting.segments.length > 0 
-                              ? formatTime(meeting.segments[meeting.segments.length - 1].end)
-                              : "0:00"
-                            }
+                            {meeting.segments.length > 0
+                              ? formatTime(
+                                  meeting.segments[meeting.segments.length - 1]
+                                    .end
+                                )
+                              : "0:00"}
                           </div>
                           <div className="text-muted">Duration</div>
                         </div>
@@ -234,7 +251,7 @@ function MeetingDetail() {
                       <div className="col-md-3">
                         <div className="text-center">
                           <div className="h4 text-primary">
-                            {meeting.transcript.split(' ').length}
+                            {meeting.transcript.split(" ").length}
                           </div>
                           <div className="text-muted">Words</div>
                         </div>
@@ -242,19 +259,25 @@ function MeetingDetail() {
                     </div>
                     <div className="alert alert-info">
                       <i className="fas fa-info-circle me-2"></i>
-                      Click "View Transcript" to see the detailed conversation with speaker identification.
+                      Click "View Transcript" to see the detailed conversation
+                      with speaker identification.
                     </div>
                   </div>
                 ) : (
                   <div className="text-center py-4">
                     <i className="fas fa-clock fa-3x text-muted mb-3"></i>
                     <h5 className="text-muted">
-                      {meeting.status === "pending" && "Waiting for audio upload..."}
-                      {meeting.status === "processing" && "Processing audio file..."}
+                      {meeting.status === "pending" &&
+                        "Waiting for audio upload..."}
+                      {meeting.status === "processing" &&
+                        "Processing audio file..."}
                       {meeting.status === "failed" && "Failed to process audio"}
                     </h5>
                     {meeting.status === "processing" && (
-                      <div className="spinner-border text-primary mt-3" role="status">
+                      <div
+                        className="spinner-border text-primary mt-3"
+                        role="status"
+                      >
                         <span className="visually-hidden">Processing...</span>
                       </div>
                     )}
@@ -285,7 +308,8 @@ function MeetingDetail() {
                               {segment.text}
                             </div>
                             <div className="text-muted small">
-                              {formatTime(segment.start)} - {formatTime(segment.end)}
+                              {formatTime(segment.start)} -{" "}
+                              {formatTime(segment.end)}
                             </div>
                           </div>
                         </div>
@@ -297,7 +321,8 @@ function MeetingDetail() {
                     <i className="fas fa-file-alt fa-3x text-muted mb-3"></i>
                     <h5 className="text-muted">Transcript not available yet</h5>
                     <p className="text-muted">
-                      The transcript will be available once the audio processing is complete.
+                      The transcript will be available once the audio processing
+                      is complete.
                     </p>
                   </div>
                 )}
@@ -310,4 +335,4 @@ function MeetingDetail() {
   );
 }
 
-export default MeetingDetail; 
+export default MeetingDetail;

@@ -17,6 +17,13 @@ from app.models.meeting import (
     mongo_doc_to_meeting_list_response
 )
 import jwt
+from pydantic import BaseModel
+
+class MeetingUpdate(BaseModel):
+    title: str
+    description: str
+    transcript: str
+    speakerNames: Dict[str, str]
 
 router = APIRouter(prefix="/meeting", tags=["meeting"])
 
@@ -222,6 +229,43 @@ async def upload_audio(
             status_code=500,
             detail="Internal server error while processing audio file"
         )
+    
+@router.put("/{meeting_id}", response_model=MeetingResponse)
+async def update_meeting(
+    meeting_id: str,
+    update: MeetingUpdate,
+    user_id: str = Depends(get_current_user)
+):
+    # 1) fetch the existing meeting
+    meeting =  db.meetings.find_one({
+        "_id": ObjectId(meeting_id),
+        "userId": ObjectId(user_id)
+    })
+    if not meeting:
+        raise HTTPException(status_code=404, detail="Meeting not found")
+
+    # 2) remap its segments according to speakerNames
+    new_segments = []
+    for seg in meeting.get("segments", []):
+        orig = seg.get("speaker")
+        new_seg = {**seg, "speaker": update.speakerNames.get(orig, orig)}
+        new_segments.append(new_seg)
+
+    # 3) update the document
+    db.meetings.update_one(
+        {"_id": ObjectId(meeting_id)},
+        {"$set": {
+            "title": update.title,
+            "description": update.description,
+            "transcript": update.transcript,
+            "segments": new_segments,
+            "updatedAt": datetime.utcnow()
+        }}
+    )
+
+    # 4) return the updated meeting
+    updated =  db.meetings.find_one({"_id": ObjectId(meeting_id)})
+    return mongo_doc_to_meeting_response(updated)
 
 @router.get("/health")
 async def meeting_health():

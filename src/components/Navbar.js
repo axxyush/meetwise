@@ -55,51 +55,81 @@ function Navbar() {
                   aria-current="page"
                   to="/"
                 >
-                  Home
+                  MeetWise
                 </Link>{" "}
               </li>{" "}
-            
-              <li className="nav-item dropdown">
+              <li className="nav-item">
                 {" "}
-                <button
-                  className="nav-link dropdown-toggle font btn btn-link border-0 p-0"
+                <Link
+                  className="nav-link active font"
+                  aria-current="page"
+                  to="/create"
+                >
+                  Create
+                </Link>{" "}
+              </li>{" "}
+              {/* <li className="nav-item dropdown">
+                <a
+                  className="nav-link dropdown-toggle"
+                  href="#"
+                  role="button"
                   data-bs-toggle="dropdown"
                   aria-expanded="false"
                 >
                   Create
-                </button>{" "}
-                <ul className="dropdown-menu dropdown-menu-dark ">
-                  {" "}
+                </a>
+                <ul className="dropdown-menu dropdown-menu-dark">
                   <li>
-                    <button className="dropdown-item font btn btn-link border-0 p-0" onClick={handleNewMeeting}>
-                      New Meeting
-                    </button>
-                  </li>{" "}
+                    <a className="dropdown-item" href="#">
+                      Action
+                    </a>
+                  </li>
                   <li>
-                    <button className="dropdown-item font btn btn-link border-0 p-0" disabled>
-                      New Group
-                    </button>
-                  </li>{" "}
-                </ul>{" "}
-              </li>{" "}
+                    <a className="dropdown-item" href="#">
+                      Another action
+                    </a>
+                  </li>
+                  <li>
+                    <hr className="dropdown-divider" />
+                  </li>
+                  <li>
+                    <a className="dropdown-item" href="#">
+                      Something else here
+                    </a>
+                  </li>
+                </ul>
+              </li> */}
               <li className="nav-item">
-                {" "}
-                <button className="nav-link font btn btn-link border-0 p-0">
+                <a className="nav-link" href="#">
                   About
-                </button>{" "}
-              </li>{" "}
+                </a>
+              </li>
             </ul>{" "}
             <div className="d-lg-flex col-lg-3 justify-content-lg-end">
               {" "}
               {isLoggedIn ? (
                 <div className="d-flex align-items-center gap-2">
                   <span className="text-white small">{userEmail}</span>
-                  <button className="btn btn-outline-light btn-sm" onClick={handleLogout}>Log Out</button>
+                  <button
+                    className="btn btn-outline-light btn-sm"
+                    onClick={handleLogout}
+                  >
+                    Log Out
+                  </button>
                 </div>
               ) : (
                 <div className="d-flex align-items-center gap-2">
-                  <button className="btn btn-outline-light btn-sm" onClick={() => navigate("/login")}>Log In</button>
-                  <button className="btn btn-primary btn-sm" onClick={() => navigate("/signup")}>Sign Up</button>
+                  <Link
+                    aria-label="User Login Button"
+                    tabIndex={0}
+                    role="button"
+                    className="user-profile"
+                    to="/login"
+                  >
+                    <div className="user-profile-inner">
+                      <p className="m-0 font">Log In</p>
+                    </div>
+                  </Link>
                 </div>
               )}
             </div>{" "}

@@ -1,17 +1,19 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 function Sidebar() {
-  const [activeLink, setActiveLink] = useState("");
+  const [selectedMeeting, setSelectedMeeting] = useState("");
   const [meetings, setMeetings] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const isLoggedIn = !!localStorage.getItem("token");
   const token = localStorage.getItem("token");
   const email = localStorage.getItem("email");
+  const id = localStorage.getItem("selectedMeeting");
   const username = email ? email.split("@")[0] : "";
 
-  const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:8000/api/v1";
+  const API_BASE_URL =
+    process.env.REACT_APP_API_URL || "http://localhost:8000/api/v1";
 
   const fetchMeetings = useCallback(async () => {
     if (!isLoggedIn) {
@@ -22,12 +24,15 @@ function Sidebar() {
     try {
       const response = await fetch(`${API_BASE_URL}/meeting/list`, {
         headers: {
-          "Authorization": `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       });
-      const data = await response.json();
-      if (data.success) {
-        setMeetings(data.meetings);
+      if (!response.ok) throw new Error("Failed to fetch meetings");
+      const meetingsArray = await response.json();
+      if (Array.isArray(meetingsArray)) {
+        setMeetings(meetingsArray);
+      } else {
+        console.error("Unexpected response format:", meetingsArray);
       }
     } catch (error) {
       console.error("Error fetching meetings:", error);
@@ -39,10 +44,6 @@ function Sidebar() {
   useEffect(() => {
     fetchMeetings();
   }, [fetchMeetings, token]);
-
-  const handleLinkClick = (linkName) => {
-    setActiveLink(linkName);
-  };
 
   const handleNewMeeting = () => {
     if (!isLoggedIn) {
@@ -62,14 +63,20 @@ function Sidebar() {
       pending: "badge bg-warning",
       processing: "badge bg-info",
       completed: "badge bg-success",
-      failed: "badge bg-danger"
+      failed: "badge bg-danger",
     };
-    
+
     return (
       <span className={statusClasses[status] || "badge bg-secondary"}>
         {status}
       </span>
     );
+  };
+
+  const meetingSelect = async (selectedMeeting) => {
+    setSelectedMeeting(selectedMeeting);
+    localStorage.setItem("selectedMeeting", selectedMeeting);
+    window.location.reload();
   };
 
   return (
@@ -78,30 +85,17 @@ function Sidebar() {
         className="d-flex flex-column flex-shrink-0 p-3 text-bg-dark font"
         style={{ width: 300, height: "92vh", overflowY: "auto" }}
       >
-        <div className="d-flex align-items-center mb-3">
-          <Link to="/" className="text-white mb-0 text-decoration-none" style={{ fontSize: '1.25rem', fontWeight: 600 }}>
-            MeetWise
-          </Link>
-        </div>
-
         {/* New Meeting Button */}
-        <div className="mb-3">
-          <button
-            onClick={handleNewMeeting}
-            className="btn btn-primary w-100"
-            style={{ fontSize: "0.9rem" }}
-          >
-            <i className="fas fa-plus me-2"></i>
-            New Meeting
+        <div className="create-btn mb-3">
+          <button onClick={handleNewMeeting} className="button">
+            Create New Meeting +
           </button>
         </div>
-
-        <hr className="text-white" />
 
         {/* Meetings List */}
         {isLoggedIn && (
           <div className="mb-3">
-            <h6 className="text-white mb-2">Recent Meetings</h6>
+            <h4 className="text-white mb-3">Meetings - {meetings.length}</h4>
             {loading ? (
               <div className="text-white-50">Loading meetings...</div>
             ) : meetings.length === 0 ? (
@@ -109,28 +103,38 @@ function Sidebar() {
             ) : (
               <div className="meetings-list">
                 {meetings.map((meeting) => (
-                  <Link
+                  <button
                     key={meeting.id}
-                    to={`/meeting/${meeting.id}`}
-                    className="text-decoration-none"
-                    onClick={() => handleLinkClick(meeting.id)}
+                    // to={`/meeting/${meeting.id}`}
+                    className="text-decoration-none btn btn-link"
+                    style={{ width: "100%" }}
+                    onClick={() => meetingSelect(meeting.id)}
                   >
                     <div
-                      className={`meeting-item p-2 mb-2 rounded ${
-                        activeLink === meeting.id ? "bg-primary" : "bg-dark"
+                      className={`meeting-item p-2 rounded ${
+                        id === meeting.id ? "bg-primary" : "bg-dark"
                       }`}
                       style={{ border: "1px solid #444" }}
                     >
                       <div className="d-flex justify-content-between align-items-start">
                         <div className="flex-grow-1">
-                          <div className="text-white fw-bold" style={{ fontSize: "0.9rem" }}>
+                          <div
+                            className="text-white fw-bold"
+                            style={{ fontSize: "0.9rem" }}
+                          >
                             {meeting.title}
                           </div>
-                          <div className="text-white-50" style={{ fontSize: "0.8rem" }}>
+                          <div
+                            className="text-white-50"
+                            style={{ fontSize: "0.8rem" }}
+                          >
                             {formatDate(meeting.createdAt)}
                           </div>
                           {meeting.speakerCount > 0 && (
-                            <div className="text-white-50" style={{ fontSize: "0.8rem" }}>
+                            <div
+                              className="text-white-50"
+                              style={{ fontSize: "0.8rem" }}
+                            >
                               {meeting.speakerCount} speakers
                             </div>
                           )}
@@ -140,62 +144,50 @@ function Sidebar() {
                         </div>
                       </div>
                     </div>
-                  </Link>
+                  </button>
                 ))}
               </div>
             )}
           </div>
         )}
 
-        <hr className="text-white" />
-
-        {/* User Profile or Log In Button */}
         <div className="dropdown mt-auto">
-          {isLoggedIn ? (
-            <button
-              className="d-flex align-items-center text-white text-decoration-none dropdown-toggle btn btn-link border-0 p-0"
-              data-bs-toggle="dropdown"
-              aria-expanded="false"
-            >
-              <img
-                src="https://github.com/axxyush.png"
-                alt=""
-                width={32}
-                height={32}
-                className="rounded-circle me-2"
-              />
-              <strong>{username}</strong>
-            </button>
-          ) : (
-            <button
-              className="btn btn-primary w-100"
-              onClick={() => navigate("/login")}
-            >
-              Log In
-            </button>
-          )}
-          {isLoggedIn && (
-            <ul className="dropdown-menu dropdown-menu-dark text-small shadow">
-              <li>
-                <button className="dropdown-item btn btn-link border-0 p-0" onClick={handleNewMeeting}>
-                  New Meeting
-                </button>
-              </li>
-              <li>
-                <button className="dropdown-item btn btn-link border-0 p-0">
-                  New Group
-                </button>
-              </li>
-              <li>
-                <hr className="dropdown-divider" />
-              </li>
-              <li>
-                <button className="dropdown-item btn btn-link border-0 p-0">
-                  Sign out
-                </button>
-              </li>
-            </ul>
-          )}
+          <hr />
+          <a
+            href="#"
+            className="d-flex align-items-center text-white text-decoration-none dropdown-toggle"
+            data-bs-toggle="dropdown"
+            aria-expanded="false"
+          >
+            <img
+              src="https://github.com/axxyush.png"
+              alt=""
+              width={32}
+              height={32}
+              className="rounded-circle me-2"
+            />
+            <strong>{username}</strong>
+          </a>
+          <ul className="dropdown-menu dropdown-menu-dark text-small shadow">
+            <li>
+              <a className="dropdown-item" href="#">
+                New Meeting
+              </a>
+            </li>
+            <li>
+              <a className="dropdown-item" href="#">
+                New Group
+              </a>
+            </li>
+            <li>
+              <hr className="dropdown-divider" />
+            </li>
+            <li>
+              <a className="dropdown-item" href="#">
+                Sign out
+              </a>
+            </li>
+          </ul>
         </div>
       </div>
     </>
